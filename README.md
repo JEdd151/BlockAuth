@@ -146,8 +146,11 @@ Con ayuda de herramientas como postman interactuamos con el sistema. A continuac
 
 ## Notas Importantes
 1- **Seguridad**:
+
   - Asegúrate de proteger los archivos que contienen las claves privadas (`clave_privada.pem`), ya que su exposición
     comprometería la seguridad del sistema.
+    
 2- **Propagación de Bloques**:
-    - El programa intenta propagar los bloques a un nodo en `http://127.0.0.1:5000/agregar_bloque`.
+
+   - El programa intenta propagar los bloques a un nodo en `http://127.0.0.1:5000/agregar_bloque`.
       Asegurate de que el nodo esté en ejecución.
