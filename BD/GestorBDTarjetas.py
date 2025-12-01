@@ -77,7 +77,16 @@ class GestorBDTarjetas:
     
 
 if __name__ == '__main__':
+    from BD.GestorBDTarjetas import GestorBDTarjetas
+
+    #Crear instancia del gestor
     gestor = GestorBDTarjetas()
+
+    #Borrar la tabla
     gestor.borrar_tabla()
+
+    #Cerrar conexión
     gestor.cerrar_conexion()
+
+    print("Tabla 'Tarjetas' borrada exitosamente.")
 

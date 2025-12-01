@@ -1,6 +1,6 @@
 import hashlib
 import json
-import time
+#import time
 import base64
 
 from cryptography.hazmat.primitives.asymmetric import padding  
@@ -11,12 +11,12 @@ class Block:
     def __init__(self, index, datos, firma, clave_publica, previous_hash=""):
         self.index = index
 
-        # Si 'datos' viene como JSON (str), lo parseamos a dict.
+        #si 'datos' viene como JSON (str), lo parseamos a dict.
         if isinstance(datos, str):
             try:
                 datos = json.loads(datos)
             except json.JSONDecodeError:
-                #print("⚠️ Datos inválidos en el bloque (no es JSON)")
+                #print("Datos inválidos en el bloque (no es JSON)")
                 datos = {}
         self.datos = datos
 
@@ -27,7 +27,7 @@ class Block:
 
     
     def calcular_hash(self):
-        # Convertir el objeto en un diccionario y luego a una cadena JSON para calcular el hash
+        #Convertir el objeto en un diccionario y luego a una cadena JSON para calcular el hash
 
         block_data = {
             "index": self.index,
@@ -38,10 +38,10 @@ class Block:
         }
 
         #la variable block_data contiene todos los datos del bloque, incluyendo la firma y la clave publica
-        # Convertimos a JSON string, porque el hash se calcula sobre una cadena de texto y como en este caso 
-        # no se puede calcular el hash sobre un objeto, entonces convertimos el objeto a una cadena de texto
+        #Convertimos a JSON string, porque el hash se calcula sobre una cadena de texto y como en este caso 
+        #no se puede calcular el hash sobre un objeto, entonces convertimos el objeto a una cadena de texto
 
-        # Convertimos a JSON string
+        #Convertimos a JSON string
         #json.dumps() convierte un objeto de Python a una cadena JSON
         #*
         # Parametros: 
@@ -51,8 +51,12 @@ class Block:
         # *#
         block_string = json.dumps(block_data, sort_keys=True).encode()
 
-        # Hash usando SHA-256
-        return hashlib.sha256(block_string).hexdigest()
+        print(block_string)
+
+        #Hash usando SHA-256
+        hash_actual = hashlib.sha256(block_string).hexdigest()
+        print(hash_actual)
+        return hash_actual
     
     #
     def verificar_firma(self):
@@ -73,7 +77,7 @@ class Block:
 
     @staticmethod
     def _to_str(value):
-        # Convierte bytes a str; si ya es str, lo devuelve
+        #cnvierte bytes a str; si ya es str, lo devuelve
         if isinstance(value, (bytes, bytearray)):
             return value.decode('utf-8')
         return value

@@ -11,7 +11,7 @@ from Cifrado.FirmaDigital import FirmaDigital
 
 def main():
     gestor = GestorBDTarjetas()
-    blockchain = Blockchain(5000)  # Crea génesis si es nodo 5000
+    blockchain = Blockchain(5000)  ##crea génesis si es nodo 5000
     validador = ValidarTarjeta()
 
     while True:
@@ -23,6 +23,30 @@ def main():
         opcion = input("Elige una opción: ")
 
         if opcion == "1":
+            #sincronizar con el servidor antes de mostrar
+            try:
+                resp = requests.get("http://127.0.0.1:5000/cadena")
+                if resp.ok:
+                    cadena_remota = resp.json()
+                    blockchain.cadena.clear()
+                    for bloque_data in cadena_remota:
+                        #recrear bloques desde los datos remotos
+                        from Blockchain.Bloque import Block
+                        bloque = Block(
+                            bloque_data['index'],
+                            bloque_data['datos'],
+                            bloque_data['firma'],
+                            bloque_data['clave_publica'],
+                            bloque_data['previous_hash']
+                        )
+                        bloque.hash = bloque_data['hash']
+                        blockchain.cadena.append(bloque)
+                    print("✓ Cadena sincronizada con el servidor")
+                else:
+                    print("No se pudo sincronizar con el servidor")
+            except Exception as e:
+                print(f"Error de conexión: {e}")
+            
             blockchain.mostrar_blockchain()
 
         elif opcion == "2":
@@ -34,7 +58,7 @@ def main():
             claves = Claves(id_tarjeta, tarjeta.numero_tarjeta,
                             tarjeta.fecha_vencimiento, tarjeta.cvv, tarjeta.nip)
 
-            # Desempaquetar solo la clave pública
+            #desempaquetar solo la clave pública
             clave_publica_pem, hash_tarjeta = claves.guardar_claves_txt(
                 numero=tarjeta.numero_tarjeta,
                 fecha=tarjeta.fecha_vencimiento,
@@ -43,7 +67,7 @@ def main():
             )
             print("--Claves generadas y guardadas correctamente--\n")
 
-            # Leer hash
+            #leer hash
             ruta_hash = os.path.join("Informacion_Usuario", "hash_blockchain.txt")
             hash_tarjeta = ""
             if os.path.exists(ruta_hash):
@@ -55,33 +79,82 @@ def main():
 
             datos = { 'hash_tarjeta': hash_tarjeta }
 
-            # Firmar los datos con la clave privada
+            #firmar los datos con la clave privada
             clave_privada_pem = claves.obtener_clave_privada()  # Obtén la clave privada
             firma_b64 = FirmaDigital.datos_firma(f"{tarjeta.numero_tarjeta}|{tarjeta.fecha_vencimiento}|{tarjeta.cvv}|{tarjeta.nip}", clave_privada_pem)
             
-            # Crear y propagar bloque con la firma
-            bloque = blockchain.agregar_bloque(
-                datos=datos,
-                firma=firma_b64,  # Firma digital
-                clave_publica=clave_publica_pem
-            )
-
-            if bloque:
-                bloque_payload = bloque.to_dict()
-                try:
-                    resp = requests.post("http://127.0.0.1:5000/agregar_bloque", json=bloque_payload)
-                    if resp.ok:
-                        print("<<<Bloque propagado exitosamente al nodo>>>")
-                        print("=== Bloque agregado ===")
-                        print(json.dumps(bloque_payload, indent=4, ensure_ascii=False))
+            #obtener estado actual del servidor para usar el índice correcto
+            try:
+                resp_estado = requests.get("http://127.0.0.1:5000/cadena")
+                if resp_estado.ok:
+                    cadena_remota = resp_estado.json()
+                    if cadena_remota:
+                        ultimo_bloque = cadena_remota[-1]
+                        nuevo_index = ultimo_bloque['index'] + 1
+                        previous_hash = ultimo_bloque['hash']
                     else:
-                        print("¡¡Error¡¡ al propagar bloque:", resp.text)
-                except Exception as e:
-                    print("¡¡Error!! al conectar con nodo:", e)
-            else:
-                print("No se pudo agregar el bloque :(")
+                        nuevo_index = 1
+                        previous_hash = "0"
+                else:
+                    nuevo_index = 1
+                    previous_hash = "0"
+            except Exception as e:
+                print(f"Error obteniendo estado del servidor: {e}")
+                nuevo_index = 1
+                previous_hash = "0"
+
+            #crear bloque con el índice correcto
+            from Blockchain.Bloque import Block
+            bloque = Block(
+                index=nuevo_index,
+                datos=datos,
+                firma=firma_b64,
+                clave_publica=clave_publica_pem,
+                previous_hash=previous_hash
+            )
+            bloque.hash = bloque.calcular_hash()
+
+            #agregar a la cadena local
+            blockchain.cadena.append(bloque)
+            print(f"Bloque #{bloque.index} creado localmente")
+
+            #propagar al servidor
+            bloque_payload = bloque.to_dict()
+            try:
+                resp = requests.post("http://127.0.0.1:5000/agregar_bloque", json=bloque_payload)
+                if resp.ok:
+                    print("<<<Bloque propagado exitosamente al nodo>>>")
+                    print("=== Bloque agregado ===")
+                    print(json.dumps(bloque_payload, indent=4, ensure_ascii=False))
+                else:
+                    print("¡¡Error¡¡ al propagar bloque:", resp.text)
+            except Exception as e:
+                print("¡¡Error!! al conectar con nodo:", e)
 
         elif opcion == "3":
+            #sincronizar con el servidor antes de validar
+            try:
+                resp = requests.get("http://127.0.0.1:5000/cadena")
+                if resp.ok:
+                    cadena_remota = resp.json()
+                    blockchain.cadena.clear()
+                    for bloque_data in cadena_remota:
+                        from Blockchain.Bloque import Block
+                        bloque = Block(
+                            bloque_data['index'],
+                            bloque_data['datos'],
+                            bloque_data['firma'],
+                            bloque_data['clave_publica'],
+                            bloque_data['previous_hash']
+                        )
+                        bloque.hash = bloque_data['hash']
+                        blockchain.cadena.append(bloque)
+                    print("Cadena sincronizada para validación")
+                else:
+                    print("No se pudo sincronizar con el servidor")
+            except Exception as e:
+                print(f"Error de conexión: {e}")
+            
             validador.validar_tarjeta(blockchain)
             print("Proceso de validacion exitoso.\n")
 

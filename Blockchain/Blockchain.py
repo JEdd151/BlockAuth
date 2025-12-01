@@ -1,8 +1,8 @@
-import hashlib
+#import hashlib
 from .Bloque import Block
-import time
+#import time
 import requests
-from datetime import datetime
+#from datetime import datetime
 import json
 
 class Blockchain:
@@ -25,7 +25,7 @@ class Blockchain:
             clave_publica='',
             previous_hash='0'
         )
-        # Calcular el hash del bloque génesis
+        #calcular el hash del bloque génesis
         bloque_genesis.hash = bloque_genesis.calcular_hash()
         self.cadena.append(bloque_genesis)
         print("Bloque génesis creado con éxito.")
@@ -78,10 +78,7 @@ class Blockchain:
 
         print("\nBlockchain:")
         for bloque in self.cadena:
-            bloque_dict = bloque.to_dict()
-            for k, v in bloque_dict.items():
-                print(f"{k}: {type(v)}")
-                print(json.dumps(bloque.to_dict(), indent=4, ensure_ascii=False))
+            print(json.dumps(bloque.to_dict(), indent=4, ensure_ascii=False))
         print("-" * 40)
 
     def enviar_bloque_genesis_al_nodo(self, url_nodo="http://127.0.0.1:5000"):
